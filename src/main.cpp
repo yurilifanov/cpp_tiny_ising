@@ -7,32 +7,44 @@
 #include <numeric>      // std::partial_sum
 #include <algorithm>    // std::rotate
 #include <string>       // std::stoll
+#include "rng.hpp"      // RNG_ull, Rng_d
 
-template<typename T>
+/*
+    TO DO:
+      - Make Ising a template <typename Cfg>
+      - Overload appropriate operators for arbitrary cfg type
+      - e.g. __int128, __m256i, __m128i etc 
+*/
+
+template <typename T>
+inline constexpr int num_digits() {
+  return std::numeric_limits<T>::digits;
+}
+
+template <typename T>
 inline int popcount(T val) noexcept {
-  using namespace std;
-  return bitset<numeric_limits<T>::digits>(val).count();
+  return std::bitset<num_digits<T>()>(val).count();
 }
 
-template<typename T, int n = std::numeric_limits<T>::digits>
-inline T rotl(T x, int k) { 
-  return (x << k) | (x >> (n - k)); 
-}
-
+template <typename Cfg>
 class Ising {
+    using v_cfg = std::vector<Cfg>;
     using v_int64 = std::vector<int64_t>;
+
     const v_int64 len;
     const v_int64 cumprod_len;
     const int64_t N;
     const int64_t d;
     const int64_t d_times_2;
-    const v_int64 masks;
-    double kbt;
-    double beta;
-    double h;
-    int64_t cfg;
-    int num_aligned_pairs;
-    int num_ones;
+    const v_cfg   masks;
+    double        kbt;
+    double        beta;
+    double        h;
+    Cfg           cfg;
+    int           num_aligned_pairs;
+    int           num_ones;
+    RNG_d<false>  rng;
+
     v_int64 get_cumprod_len() const {
       auto ans = len;
       ans.emplace(ans.begin(), 1LL);
@@ -43,14 +55,14 @@ class Ising {
                       std::multiplies<int64_t>());
       return ans;
     }
-    v_int64 get_masks() const {
-      v_int64 ans(N, 0LL);
+    v_cfg get_masks() const {
+      v_cfg ans(N, Cfg(0));
       for(int64_t i = 0LL; i < N; i++) {
         //std::cout << i << ": ";
-        int64_t mask = 0LL;
+        Cfg mask = Cfg(0);
         for(int64_t j = 0LL; j < d_times_2; j++) {
           //std::cout << get_neighbour_index(i, j) << ", ";
-          mask |= 1LL << get_neighbour_index(i, j);
+          mask |= Cfg(1) << get_neighbour_index(i, j);
         }
         //std::cout << std::bitset<9>(mask) << "\n";
         ans[i] = mask;
@@ -72,14 +84,13 @@ class Ising {
       }
       return num / 2;
     }
-    int64_t get_num_aligned_neighbours_for_site(int64_t mcfg, int64_t i) const {
+    int64_t get_num_aligned_neighbours_for_site(Cfg mcfg, int64_t i) const {
       int64_t n1s = popcount(mcfg & masks[i]);
       int64_t lkp[] = {d_times_2 - n1s, n1s};
-      //std::cout << lkp[(mcfg >> i) & 1LL] << "\n";
-      return lkp[(mcfg >> i) & 1LL];
+      return lkp[(mcfg >> i) & Cfg(1)];
     }
   public:
-    Ising(v_int64 len_in)
+    Ising(v_int64 len_in, Cfg i_cfg = Cfg(0))
       : len(len_in)
       , cumprod_len(get_cumprod_len())
       , N(cumprod_len.back())
@@ -87,21 +98,21 @@ class Ising {
       , d_times_2(2LL * d)
       , masks(get_masks())
       {
-        if(N > 64) {
-          std::cout << "Number of sites is too great for int64 representation."
+        if(N > num_digits<Cfg>()) {
+          std::cout << "Number of sites is too great for representation."
                     << "\nYour should really throw an exception here.\n";
         }
         setkbt(1.);
         seth(0.);
-        setcfg(0LL);
+        setcfg(i_cfg);
       }
     void setkbt(double val) { kbt = val; beta = 1. / val; }  
     void seth(double val) { h = val; }
-    void setcfg(int64_t val) { 
-      if(val >= (1LL << N)) {
-        cfg = (1LL << N) - 1LL;
-      } else if(val < 0LL) {
-        cfg = 0LL;
+    void setcfg(Cfg val) { 
+      if(val >= (Cfg(1) << N)) {
+        cfg = (Cfg(1) << N) - Cfg(1);
+      } else if(val < Cfg(0)) {
+        cfg = Cfg(0);
       } else {
         cfg = val;
       }
@@ -113,16 +124,19 @@ class Ising {
     void mcmove();
 };
 
-inline void Ising::mcmove() {
-  int64_t i = 0LL; //N * rng();
-  int64_t cfg_new = cfg ^ (1LL << i);
-  int64_t mask = masks[i];
-  // ...
-  //int64_t lkp[] = {cfg, cfg_new};
-  //cfg = lkp[rng() < acc_prob_lkp[aligned_delta][ones_delta]];
+template <typename Cfg>
+inline void Ising<Cfg>::mcmove() {
+  int64_t i = N * rng();
+  Cfg one(1);
+  Cfg mask = masks[i];
+  Cfg cfg_new = cfg ^ (one << i);
+  int d_ones_id_lkp[] = {0L, 1L};
+  int ones_delta_id = d_ones_id_lkp[(cfg_new >> i) & one];
+  Cfg lkp[] = {cfg, cfg_new};
+  //cfg = lkp[rng() < acc_prob_lkp[aligned_delta][ones_delta_id]];
 }
 
-int main(int argc, char **argv) {
-  Ising ising({3, 3});
-  ising.setcfg(std::stoll(argv[1]));
+int main(int, char **argv) {
+  Ising<int64_t> ising({3, 3}, std::stoll(argv[1]));
+  //std::cout << (int)__int128(3) << "\n";
 }
