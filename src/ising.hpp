@@ -60,18 +60,19 @@ class Ising {
     }
     int64_t compute_num_aligned_pairs() const {
       int64_t num = 0LL;
-      static constexpr Cfg one = Cfg(1);
-      for(int64_t i = 0; i < N; i++) {
+      static const Cfg one = Cfg(1);
+      for(int64_t i = 0LL; i < N; i++) {
         int64_t n_nbr_ones_i = popcount(cfg & masks[i]);
         int64_t lkp[] = {d_times_2 - n_nbr_ones_i, n_nbr_ones_i};
-        num += lkp[(cfg >> i) & one]; 
+        bool is_one = (cfg >> i) & one;
+        num += lkp[is_one]; 
       }
-      return num / 2;
+      return num / 2LL;
     }
     void update_acc_prob_lkp() {
       int64_t n_aigned = -d_times_2;
       for(auto & vv : acc_prob_lkp) {
-        int64_t ones_delta = -1;
+        int64_t ones_delta = -1LL;
         for(auto & val: vv) {
           val = exp(beta * (n_aigned + h * ones_delta));
           ones_delta += 2LL;
@@ -109,8 +110,8 @@ class Ising {
       update_acc_prob_lkp(); 
     }
     void setcfg(Cfg val) { 
-      static constexpr Cfg zero = Cfg(0);
-      static constexpr Cfg one = Cfg(1);
+      static const Cfg zero = Cfg(0);
+      static const Cfg one = Cfg(1);
       if(val >= (one << N)) {
         cfg = (one << N) - one;
       } else if(val < zero) {
@@ -123,11 +124,11 @@ class Ising {
     }
     void mcmove() {
       int64_t i = N * rng();
-      static constexpr Cfg one = Cfg(1);
+      static const Cfg one = Cfg(1);
       Cfg cfg_new = cfg ^ (one << i);
       bool is_one = (cfg_new >> i) & one;
 
-      int ones_delta = is_one ? 1:-1;
+      int64_t ones_delta = is_one ? 1LL:-1LL;
       int64_t n_nbr_ones = popcount(cfg_new & masks[i]);
       int64_t aligned_delta = ones_delta * (2LL * n_nbr_ones - d_times_2);
 
