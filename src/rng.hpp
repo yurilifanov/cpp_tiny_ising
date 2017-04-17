@@ -9,6 +9,7 @@
 #include <ostream>
 #include <iostream>
 #include <utility> 
+#include <cmath>
 /*  
   Random integer generator
 */
@@ -69,6 +70,17 @@ class RNG_d : public RNG_ull {
         val.ull |= 1ULL;
       }
       return val.d - 1.0;
+    }
+};
+/*  
+  Exponential random number generator
+*/
+class RNG_exp : public RNG_d<true> {
+    const double inv_lambda;
+  public:
+    RNG_exp(double lambda) : RNG_d<true>(), inv_lambda(1. / lambda) {}
+    double operator()() {
+      return -inv_lambda * log(this->RNG_d<true>::operator()());
     }
 };
 #endif

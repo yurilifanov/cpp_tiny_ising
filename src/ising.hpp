@@ -140,5 +140,6 @@ class Ising {
     }
     int64_t get_num_ones() const { return num_ones; }
     int64_t get_num_aligned() const { return num_aligned_pairs; }
+    int64_t get_N() const { return N; }
 };
 #endif
