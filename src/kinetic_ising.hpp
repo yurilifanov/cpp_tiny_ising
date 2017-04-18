@@ -16,6 +16,7 @@ class KineticIsing : public Ising<Cfg> {
       , num_jumps(0ULL)
     {}
     void mcmove() { Ising<Cfg>::mcmove(); num_jumps++; }
+    void setcfg(Cfg i_cfg) { Ising<Cfg>::setcfg(i_cfg); num_jumps = 0LL; }
     double get_t() { return num_jumps > 0ULL ? rng_gamma(num_jumps):0.; }
 };
 /*
@@ -35,6 +36,7 @@ class KineticIsing_slow : public Ising<Cfg> {
       , t(0.)
     {}
     void mcmove() { Ising<Cfg>::mcmove(); t += rng_exp(); }
+    void setcfg(Cfg i_cfg) { Ising<Cfg>::setcfg(i_cfg); t = 0.; }
     double get_t() const { return t; }
 };
 #endif
