@@ -10,10 +10,13 @@
 #include <iostream>
 #include <utility> 
 #include <cmath>
+#include <limits>
 /*  
   Random integer generator
 */
 class RNG_ull {
+    using result_type = uint64_t;
+    using limits = std::numeric_limits<result_type>;
     uint64_t s0; 
     uint64_t s1;
     uint64_t rotl(const uint64_t x, int k) const { 
@@ -21,7 +24,9 @@ class RNG_ull {
     }
   public:
     RNG_ull();
-    uint64_t operator()();
+    result_type operator()();
+    static constexpr result_type min() { return limits::min(); }
+    static constexpr result_type max() { return limits::max(); }
 };
 inline RNG_ull::RNG_ull() {
   std::random_device rd;
@@ -56,16 +61,17 @@ inline uint64_t RNG_ull::operator()() {
     - is_open = true : generates double in (0, 1)
 */
 template <bool is_open = false>
-class RNG_d : public RNG_ull {
+class RNG_d {
+    RNG_ull rng_ull;
     static constexpr uint64_t dblprfx = 0x3ffULL << 52U;
   public:
-    RNG_d() : RNG_ull() {}
+    RNG_d() {}
     double operator()() {
       union DUll {
         double d;
         uint64_t ull;
       } val;
-      val.ull = dblprfx | this->RNG_ull::operator()() >> 12;
+      val.ull = dblprfx | rng_ull() >> 12;
       if(is_open) {
         val.ull |= 1ULL;
       }
@@ -75,12 +81,33 @@ class RNG_d : public RNG_ull {
 /*  
   Exponential random number generator
 */
-class RNG_exp : public RNG_d<true> {
+class RNG_exp {
+    RNG_d<true> rng_d;
     const double inv_lambda;
   public:
-    RNG_exp(double lambda) : RNG_d<true>(), inv_lambda(1. / lambda) {}
+    RNG_exp(double lambda) : rng_d(), inv_lambda(1. / lambda) {}
     double operator()() {
-      return -inv_lambda * log(this->RNG_d<true>::operator()());
+      return -inv_lambda * log(rng_d());
+    }
+};
+/*  
+  Gamma random number generator for sampling sums of exponential random
+  variates.
+*/
+class RNG_gamma {
+    RNG_ull rng_ull;
+    using Gamma = std::gamma_distribution<double>;
+    const double beta; //beta = 1 / theta
+    Gamma gamma;
+  public:
+    RNG_gamma(double theta) 
+      : rng_ull()
+      , beta(1. / theta)
+      , gamma(Gamma(1, beta)) 
+    {}
+    double operator()(uint64_t n) {
+      gamma.param(Gamma::param_type(n, beta));
+      return gamma(rng_ull);
     }
 };
 #endif
