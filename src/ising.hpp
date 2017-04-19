@@ -1,12 +1,16 @@
 #ifndef _ISING_
 #define _ISING_
-#include <cstdint>          // int64_t, etc
-#include <vector>           // std::vector
-#include <functional>       // std::multiplies
-#include <numeric>          // std::partial_sum
-#include <cmath>            // exp
-#include "rng.hpp"          // RNG_ull, Rng_d
-#include "cfg_types.hpp"    // num_digits, popcount
+#include <iostream>             // std::cout
+#include <cstdint>              // int64_t, etc
+#include <vector>               // std::vector
+#include <functional>           // std::multiplies
+#include <numeric>              // std::partial_sum
+#include <cmath>                // exp
+#include <fstream>              // std::ofstream
+#include <algorithm>            // std::fill
+#include <boost/progress.hpp>   // boost::progress_display
+#include "rng.hpp"              // RNG_ull, Rng_d
+#include "cfg_types.hpp"        // num_digits, popcount
 template <typename Cfg>
 class Ising {
     using v_cfg = std::vector<Cfg>;
@@ -141,5 +145,53 @@ class Ising {
     int64_t get_num_ones() const { return num_ones; }
     int64_t get_num_aligned() const { return num_aligned_pairs; }
     int64_t get_N() const { return N; }
+    void save_transition_matrix_data() const {
+      static const Cfg one = Cfg(1);
+      static const Cfg max = (one << N) - one;
+      v_cfg cfgs_from(N, one);            
+      v_cfg cfgs_to(N, one);
+      v_int64 ones_deltas(N, 0LL);
+      v_int64 aligned_deltas(N, 0LL);
+      std::ofstream f_cfgs_from("cfgs_from.bin", std::ios::binary);
+      std::ofstream f_cfgs_to("cfgs_to.bin", std::ios::binary);
+      std::ofstream f_ones_deltas("ones_deltas.bin", std::ios::binary);
+      std::ofstream f_aligned_deltas("aligned_deltas.bin", std::ios::binary);
+      std::cout << "Saving transition matrix data...\n";
+      boost::progress_display pd(1ULL << N);
+      for(Cfg cfg_from = Cfg(0); cfg_from <= max; cfg_from++) {
+        std::fill(cfgs_from.begin(), cfgs_from.end(), cfg_from);
+        for(int64_t i = 0LL; i < N; i++) {
+          Cfg cfg_to = cfg_from ^ (one << i);
+          bool is_one = (cfg_to >> i) & one;
+          int64_t ones_delta = is_one ? 1LL:-1LL;
+          int64_t n_nbr_ones = popcount(cfg_to & masks[i]);
+          int64_t aligned_delta = ones_delta * (2LL * n_nbr_ones - d_times_2);
+          cfgs_to[i] = cfg_to;
+          ones_deltas[i] = ones_delta;
+          aligned_deltas[i] = aligned_delta;
+        }
+        f_cfgs_from.write(
+          reinterpret_cast<const char *>(cfgs_from.data()), 
+          N * sizeof(Cfg)
+        );
+        f_cfgs_to.write(
+          reinterpret_cast<const char *>(cfgs_to.data()), 
+          N * sizeof(Cfg)
+        );
+        f_ones_deltas.write(
+          reinterpret_cast<const char *>(ones_deltas.data()), 
+          N * sizeof(int64_t)
+        );
+        f_aligned_deltas.write(
+          reinterpret_cast<const char *>(aligned_deltas.data()), 
+          N * sizeof(int64_t)
+        );
+        ++pd;
+      }
+      f_cfgs_from.close();
+      f_cfgs_to.close();
+      f_ones_deltas.close();
+      f_aligned_deltas.close();
+    }    
 };
 #endif

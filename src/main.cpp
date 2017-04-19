@@ -12,6 +12,7 @@ void test(Cfg cfg_0, int64_t num_mv, double kbt) {
   Timer<double> timer;
   int64_t n_mv = num_mv;
   ising.setkbt(kbt);
+  std::cout << "Testing run time...\n";
   for(int64_t i = 0LL; i < n_mv; i++) {
     ising.mcmove();
   }
@@ -40,11 +41,16 @@ void fpt(int64_t n, double kbt, double h) {
   fl.write((const char *) fpts.data(), fpts.size() * sizeof(double));
   fl.close();
 }
+void tm_data() {
+  Ising<uint64_t> ising({3, 2});
+  ising.save_transition_matrix_data();
+}
 int main(int, char **argv) {
   using namespace std;
   try {
     //test<uint64_t>(stoull(argv[1]), stoll(argv[2]), stod(argv[3]));
-    fpt(stoll(argv[1]), stod(argv[2]), stod(argv[3]));
+    //fpt(stoll(argv[1]), stod(argv[2]), stod(argv[3]));
+    tm_data();
   } catch(exception & e) {
     cout << e.what() << "\n";
   }
