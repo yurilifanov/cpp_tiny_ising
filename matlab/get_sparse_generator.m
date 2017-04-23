@@ -9,7 +9,7 @@ function mat = get_sparse_generator(kbt, h, dir_str)
   num_cfg = length(accum);
   num_sites = log2(num_cfg);
 
-  p_gen_acc = [p_gen_acc ./ accum(i_from); -ones(num_cfg, 1)] ./ num_sites;
+  p_gen_acc = [p_gen_acc ./ accum(i_from); -ones(num_cfg, 1)] .* num_sites;
   i_from = [i_from; (1:num_cfg)'];
   i_to = [i_to; (1:num_cfg)'];
 

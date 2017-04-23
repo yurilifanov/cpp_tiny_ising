@@ -13,6 +13,7 @@
 #include "cfg_types.hpp"        // num_digits, popcount
 template <typename Cfg>
 class Ising {
+  protected:
     using v_cfg = std::vector<Cfg>;
     using v_int64 = std::vector<int64_t>;
     using v_double = std::vector<double>;
@@ -24,7 +25,7 @@ class Ising {
     const int64_t d;
     const int64_t d_times_2;
     const v_cfg   masks;
-    vv_double     acc_prob_lkp;
+    vv_double     acc_weight_lkp;
     double        kbt;
     double        beta;
     double        h;
@@ -37,10 +38,11 @@ class Ising {
       auto ans = len;
       ans.emplace(ans.begin(), 1LL);
       std::partial_sum(
-                      ans.begin(), 
-                      ans.end(), 
-                      ans.begin(), 
-                      std::multiplies<int64_t>());
+        ans.begin(), 
+        ans.end(), 
+        ans.begin(), 
+        std::multiplies<int64_t>()
+      );
       return ans;
     }
     v_cfg get_masks() const {
@@ -73,9 +75,9 @@ class Ising {
       }
       return num / 2LL;
     }
-    void update_acc_prob_lkp() {
+    void update_acc_weight_lkp() {
       int64_t n_aigned = -d_times_2;
-      for(auto & vv : acc_prob_lkp) {
+      for(auto & vv : acc_weight_lkp) {
         int64_t ones_delta = -1LL;
         for(auto & val: vv) {
           val = exp(beta * (n_aigned + h * ones_delta));
@@ -92,7 +94,7 @@ class Ising {
       , d(len_in.size())
       , d_times_2(2LL * d)
       , masks(get_masks())
-      , acc_prob_lkp(vv_double(2LL * d_times_2 + 1LL, v_double(2LL, 0.)))
+      , acc_weight_lkp(vv_double(2LL * d_times_2 + 1LL, v_double(2LL, 0.)))
       {
         if(N > num_digits<Cfg>()) {
           std::cout << "Number of sites " << N 
@@ -107,11 +109,11 @@ class Ising {
     void setkbt(double val) { 
       kbt = val; 
       beta = 1. / val; 
-      update_acc_prob_lkp(); 
+      update_acc_weight_lkp(); 
     }  
     void seth(double val) { 
       h = val;
-      update_acc_prob_lkp(); 
+      update_acc_weight_lkp(); 
     }
     void setcfg(Cfg val) { 
       static const Cfg zero = Cfg(0);
@@ -126,7 +128,7 @@ class Ising {
       num_aligned_pairs = compute_num_aligned_pairs();
       num_ones = popcount(cfg);
     }
-    void mcmove() {
+    bool mcmove() {
       int64_t i = N * rng();
       static const Cfg one = Cfg(1);
       Cfg cfg_new = cfg ^ (one << i);
@@ -136,11 +138,13 @@ class Ising {
       int64_t n_nbr_ones = popcount(cfg_new & masks[i]);
       int64_t aligned_delta = ones_delta * (2LL * n_nbr_ones - d_times_2);
 
-      if(rng() < acc_prob_lkp[d_times_2 + aligned_delta][is_one]) {
+      if(rng() < acc_weight_lkp[d_times_2 + aligned_delta][is_one]) {
         cfg = cfg_new;
         num_ones += ones_delta;
         num_aligned_pairs += aligned_delta;
+        return true;
       }
+      return false;
     }
     int64_t get_num_ones() const { return num_ones; }
     int64_t get_num_aligned() const { return num_aligned_pairs; }

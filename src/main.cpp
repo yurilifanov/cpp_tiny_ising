@@ -23,7 +23,7 @@ void test(Cfg cfg_0, int64_t num_mv, double kbt) {
 }
 void fpt(int64_t n, double kbt, double h) {
   using Cfg = uint64_t;
-  KineticIsing<Cfg> ising({3, 3});
+  KineticIsing<Cfg> ising({3, 2});
   ising.setkbt(kbt);
   ising.seth(h);
   std::vector<double> fpts(n, 0.);
@@ -49,7 +49,7 @@ int main(int, char **argv) {
   using namespace std;
   try {
     //test<uint64_t>(stoull(argv[1]), stoll(argv[2]), stod(argv[3]));
-    //fpt(stoll(argv[1]), stod(argv[2]), stod(argv[3]));
+    fpt(stoll(argv[1]), stod(argv[2]), stod(argv[3]));
     tm_data();
   } catch(exception & e) {
     cout << e.what() << "\n";
