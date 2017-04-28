@@ -1,6 +1,15 @@
 import numpy as np
+from plotly import tools
+from plotly.offline import plot
+from plotly.graph_objs import Scatter, Layout, Figure
 from scipy.sparse import csr_matrix, hstack
 from scipy.sparse.linalg import lsqr, expm_multiply
+
+def get_e_ffpt(r_dir=''):
+  fpts = np.fromfile(r_dir + './fpts.bin', dtype=np.float64)
+  h, bins = np.histogram(fpts, bins='auto', density=False)
+  h = h / np.sum(h)
+  return np.cumsum(h), bins
 
 def get_ffpt(Q, A, I, v, t_min, t_max, num_t_pts):
   R = np.hstack((A, I))
@@ -33,21 +42,26 @@ def get_stationary_distribution(sparse_Q):
   return ans[0]
 
 if __name__ == '__main__':
-  Q = get_sparse_generator(1, 0)
+  Q = get_sparse_generator(.9, 0)
   v = get_stationary_distribution(Q)
   A = 0
   n_cfg = Q.shape[0]
   B = n_cfg - 1
   I = np.setdiff1d(np.arange(n_cfg), np.hstack((A, B)))
-  #ffpt = get_ffpt(Q, A, I, v, 0, 1000, 10)
-  ffpt = np.array([
-              0.07878145,  
-              0.99236894,  
-              0.99989866,  
-              0.99999865,  
-              0.99999998,
-              1.        ,  
-              1.        ,  
-              1.        ,  
-              1.        ,  
-              1.        ])
+
+  v[np.hstack((I, B))] = 0
+  v = v / np.sum(v)
+
+  t_min, t_max, num_pts = (10, 40, 10)
+  ffpt = get_ffpt(Q, A, I, v, t_min, t_max, num_pts)
+  t = np.linspace(t_min, t_max, num_pts)
+
+  e_ffpt, e_t = get_e_ffpt()
+  f_trace = Scatter(x=t, y=ffpt, name='Analytical', mode='markers')
+  e_trace = Scatter(x=e_t, y=e_ffpt, name='Empirical', mode='line')
+  layout = Layout(title='First passage time CDF',
+                  xaxis={'title': 't (Survival time)'},
+                  yaxis={'title': 'CDF(t)'})
+  figure = Figure(data=[f_trace, e_trace], layout=layout)
+  plot(figure, filename='ffpt_plot.html')
+
