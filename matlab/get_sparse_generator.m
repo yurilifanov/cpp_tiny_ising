@@ -1,8 +1,8 @@
 function mat = get_sparse_generator(kbt, h, dir_str)
-  i_from = readbin([dir_str, '/cfgs_from.bin'], 'uint64') + 1;
-  i_to = readbin([dir_str, '/cfgs_to.bin'], 'uint64') + 1;
-  d_ones = readbin([dir_str, '/ones_deltas.bin'], 'int64');
-  d_aligned = readbin([dir_str, '/aligned_deltas.bin'], 'int64');
+  i_from = readbin([dir_str, './cfgs_from.bin'], 'uint64') + 1;
+  i_to = readbin([dir_str, './cfgs_to.bin'], 'uint64') + 1;
+  d_ones = readbin([dir_str, './ones_deltas.bin'], 'int64');
+  d_aligned = readbin([dir_str, './aligned_deltas.bin'], 'int64');
 
   p_gen_acc = min(1, exp((d_aligned + h * d_ones) / kbt));
   accum = accumarray(i_from, p_gen_acc);

@@ -23,7 +23,7 @@ void test(Cfg cfg_0, int64_t num_mv, double kbt) {
 }
 void fpt(int64_t n, double kbt, double h) {
   using Cfg = uint64_t;
-  KineticIsing<Cfg> ising({3, 2});
+  KineticIsing<Cfg> ising({4, 4});
   ising.setkbt(kbt);
   ising.seth(h);
   std::vector<double> fpts(n, 0.);
@@ -42,7 +42,7 @@ void fpt(int64_t n, double kbt, double h) {
   fl.close();
 }
 void tm_data() {
-  Ising<uint64_t> ising({3, 2});
+  Ising<uint64_t> ising({4, 4});
   ising.save_transition_matrix_data();
 }
 int main(int, char **argv) {

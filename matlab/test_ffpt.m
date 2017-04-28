@@ -1,14 +1,14 @@
 close all, clear all, fclose all;
 kbt = 1.0;
-h = 1.0;
+h = 0.0;
 n_smp = 1e6;
 
 cd('..');
 system(sprintf('./a.out %d %0.6f %0.6f', n_smp, kbt, h));
 cd('matlab');
 
-t = linspace(0, 100, 100);
-g = get_sparse_generator(kbt, h, '..');
+t = linspace(0, 500, 100);
+g = get_sparse_generator(kbt, h, '../');
 [f, r] = ffpt_and_rate(g, 1, size(g, 1), t);
 
 t_smp = readbin('../fpts.bin', 'double');
