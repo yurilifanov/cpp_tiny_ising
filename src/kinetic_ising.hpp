@@ -54,6 +54,7 @@ class KineticIsing_extra_slow : public Ising<Cfg> {
       , t(0.)
       , flip_probs(Ising<Cfg>::N, 0.)
     {}
+    //here self-loops ARE NOT counted as jumps
     void mcmove() { 
       int64_t i = 0LL;
       for(auto & val : flip_probs) {
@@ -102,6 +103,7 @@ class KineticIsing_slow : public Ising<Cfg> {
       , rng_exp(Ising<Cfg>::get_N())
       , t(0.)
     {}
+    //here self-loops ARE NOT counted as jumps
     void mcmove() { 
       if(Ising<Cfg>::mcmove()) {
         t += rng_exp(); 
@@ -126,10 +128,16 @@ class KineticIsing : public Ising<Cfg> {
       , rng_gamma(Ising<Cfg>::get_N())
       , num_jumps(0ULL)
     {}
+    //here self-loops ARE NOT counted as jumps
     void mcmove() { 
       if(Ising<Cfg>::mcmove()) {
         num_jumps++;
       }  
+    }
+    //here self-loops ARE counted as jumps
+    void mcmove_lazy() {
+      Ising<Cfg>::mcmove();
+      num_jumps++;
     }
     void setcfg(Cfg i_cfg) { Ising<Cfg>::setcfg(i_cfg); num_jumps = 0LL; }
     double get_t() { return num_jumps > 0ULL ? rng_gamma(num_jumps):0.; }
